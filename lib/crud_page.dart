@@ -1,6 +1,6 @@
 // lib/crud_page.dart
 import 'package:flutter/material.dart';
-import 'main.dart'; // Contact class
+import 'models/contact.dart';
 
 class CrudPage extends StatefulWidget {
   final List<Contact> contacts;
@@ -124,20 +124,26 @@ class _CrudPageState extends State<CrudPage> {
 
                     if (name.isEmpty || phone.isEmpty) return;
 
-                    final newContact = Contact(
-                      id: index?.toString() ??
-                          DateTime.now()
-                              .millisecondsSinceEpoch
-                              .toString(),
+                    final String id;
+                    if (index == null) {
+                      id = DateTime.now()
+                          .millisecondsSinceEpoch
+                          .toString();
+                    } else {
+                      id = widget.contacts[index].id;
+                    }
+
+                    final contact = Contact(
+                      id: id,
                       name: name,
                       phone: phone,
                       email: email.isEmpty ? 'no-email@example.com' : email,
                     );
 
                     if (index == null) {
-                      widget.onAddContact(newContact);
+                      widget.onAddContact(contact);
                     } else {
-                      widget.onEditContact(index, newContact);
+                      widget.onEditContact(index, contact);
                     }
 
                     Navigator.pop(context);
@@ -206,9 +212,7 @@ class _CrudPageState extends State<CrudPage> {
             child: ListTile(
               leading: CircleAvatar(
                 child: Text(
-                  c.name.isNotEmpty
-                      ? c.name[0].toUpperCase()
-                      : '?',
+                  c.name.isNotEmpty ? c.name[0].toUpperCase() : '?',
                 ),
               ),
               title: Text(c.name),
@@ -237,3 +241,4 @@ class _CrudPageState extends State<CrudPage> {
     );
   }
 }
+

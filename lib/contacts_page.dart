@@ -1,6 +1,6 @@
 // lib/contacts_page.dart
 import 'package:flutter/material.dart';
-import 'main.dart'; // for Contact class
+import 'models/contact.dart';
 import 'contact_detail_page.dart';
 
 class ContactsPage extends StatelessWidget {
@@ -55,7 +55,7 @@ class ContactsPage extends StatelessWidget {
 
     return Column(
       children: [
-        // Search bar (UI only for now)
+        // Top search bar (UI only for now)
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: TextField(

@@ -1,4 +1,6 @@
+// lib/signup_page.dart
 import 'package:flutter/material.dart';
+import 'services/hive_service.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -12,6 +14,9 @@ class _SignupPageState extends State<SignupPage> {
   final TextEditingController passCtrl = TextEditingController();
   final TextEditingController confirmPassCtrl = TextEditingController();
 
+  String? _error;
+  bool _isLoading = false;
+
   @override
   void dispose() {
     emailCtrl.dispose();
@@ -20,9 +25,47 @@ class _SignupPageState extends State<SignupPage> {
     super.dispose();
   }
 
-  void _signup() {
-    // For now, pretend signup is always successful and go back to login.
-    Navigator.pop(context);
+  Future<void> _signup() async {
+    setState(() {
+      _error = null;
+      _isLoading = true;
+    });
+
+    final email = emailCtrl.text.trim();
+    final pass = passCtrl.text.trim();
+    final confirm = confirmPassCtrl.text.trim();
+
+    if (email.isEmpty || pass.isEmpty || confirm.isEmpty) {
+      setState(() {
+        _isLoading = false;
+        _error = 'All fields are required.';
+      });
+      return;
+    }
+
+    if (pass != confirm) {
+      setState(() {
+        _isLoading = false;
+        _error = 'Passwords do not match.';
+      });
+      return;
+    }
+
+    if (HiveService.userExists(email)) {
+      setState(() {
+        _isLoading = false;
+        _error = 'An account already exists with this email.';
+      });
+      return;
+    }
+
+    await HiveService.saveUser(email: email, password: pass);
+
+    setState(() {
+      _isLoading = false;
+    });
+
+    Navigator.pop(context); // back to login
   }
 
   @override
@@ -89,14 +132,26 @@ class _SignupPageState extends State<SignupPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 16),
+              if (_error != null)
+                Text(
+                  _error!,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: _signup,
-                  child: const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 12),
-                    child: Text(
+                  onPressed: _isLoading ? null : _signup,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: _isLoading
+                        ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                        : const Text(
                       'Create Account',
                       style: TextStyle(fontSize: 16),
                     ),

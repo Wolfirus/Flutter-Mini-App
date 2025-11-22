@@ -1,46 +1,19 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
 
+import 'models/contact.dart';
+import 'services/hive_service.dart';
+
 import 'login_page.dart';
 import 'signup_page.dart';
 import 'contacts_page.dart';
 import 'crud_page.dart';
-import 'contact_detail_page.dart'; // just for type references
+import 'contact_detail_page.dart'; // for types
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await HiveService.init(); // init Hive before runApp
   runApp(const MyApp());
-}
-
-class Contact {
-  final String id;
-  final String name;
-  final String phone;
-  final String email;
-  final String avatarUrl; // optional (for photo later)
-
-  const Contact({
-    required this.id,
-    required this.name,
-    required this.phone,
-    required this.email,
-    this.avatarUrl = '',
-  });
-
-  Contact copyWith({
-    String? id,
-    String? name,
-    String? phone,
-    String? email,
-    String? avatarUrl,
-  }) {
-    return Contact(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      phone: phone ?? this.phone,
-      email: email ?? this.email,
-      avatarUrl: avatarUrl ?? this.avatarUrl,
-    );
-  }
 }
 
 class MyApp extends StatelessWidget {
@@ -61,10 +34,7 @@ class MyApp extends StatelessWidget {
           centerTitle: true,
         ),
       ),
-
-      // 👉 IMPORTANT: start on the login screen
       initialRoute: '/login',
-
       routes: {
         '/login': (context) => const LoginPage(),
         '/signup': (context) => const SignupPage(),
@@ -82,15 +52,21 @@ class MainShell extends StatefulWidget {
 }
 
 class _MainShellState extends State<MainShell> {
-  int _selectedIndex = 1; // Start on Contacts tab
+  int _selectedIndex = 1; // start on Contacts tab
 
-  /// 👉 This is the shared list of contacts for the whole app
   List<Contact> _contacts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _contacts = HiveService.loadContacts();
+  }
 
   void _addContact(Contact contact) {
     setState(() {
       _contacts = [..._contacts, contact];
     });
+    HiveService.saveContact(contact);
   }
 
   void _editContact(int index, Contact updated) {
@@ -100,15 +76,18 @@ class _MainShellState extends State<MainShell> {
           if (i == index) updated else _contacts[i],
       ];
     });
+    HiveService.saveContact(updated);
   }
 
   void _deleteContact(int index) {
+    final contact = _contacts[index];
     setState(() {
       _contacts = [
         for (int i = 0; i < _contacts.length; i++)
           if (i != index) _contacts[i],
       ];
     });
+    HiveService.deleteContact(contact.id);
   }
 
   @override

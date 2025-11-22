@@ -1,4 +1,6 @@
+// lib/login_page.dart
 import 'package:flutter/material.dart';
+import 'services/hive_service.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -11,6 +13,9 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController emailCtrl = TextEditingController();
   final TextEditingController passCtrl = TextEditingController();
 
+  bool _isLoading = false;
+  String? _error;
+
   @override
   void dispose() {
     emailCtrl.dispose();
@@ -18,9 +23,37 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _login() {
-    // For now, this just navigates to the home screen without real auth.
-    // You can add your own validation or backend logic here.
+  Future<void> _login() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    final email = emailCtrl.text.trim();
+    final password = passCtrl.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      setState(() {
+        _isLoading = false;
+        _error = 'Please enter email and password.';
+      });
+      return;
+    }
+
+    final isValid = HiveService.validateUser(email, password);
+
+    if (!isValid) {
+      setState(() {
+        _isLoading = false;
+        _error = 'Invalid email or password.';
+      });
+      return;
+    }
+
+    setState(() {
+      _isLoading = false;
+    });
+
     Navigator.pushReplacementNamed(context, '/home');
   }
 
@@ -82,14 +115,26 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 12),
+                if (_error != null)
+                  Text(
+                    _error!,
+                    style: const TextStyle(color: Colors.red),
+                  ),
+                const SizedBox(height: 16),
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
-                    onPressed: _login,
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 12),
-                      child: Text(
+                    onPressed: _isLoading ? null : _login,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: _isLoading
+                          ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                          : const Text(
                         'Login',
                         style: TextStyle(fontSize: 16),
                       ),

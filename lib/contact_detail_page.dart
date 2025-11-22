@@ -1,6 +1,6 @@
 // lib/contact_detail_page.dart
 import 'package:flutter/material.dart';
-import 'main.dart'; // for Contact class
+import 'models/contact.dart';
 
 class ContactDetailPage extends StatelessWidget {
   final Contact contact;
@@ -95,11 +95,11 @@ class ContactDetailPage extends StatelessWidget {
                   const SizedBox(height: 16),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
+                    children: const [
                       _ActionButton(icon: Icons.call, label: 'Call'),
-                      const SizedBox(width: 24),
+                      SizedBox(width: 24),
                       _ActionButton(icon: Icons.message, label: 'Message'),
-                      const SizedBox(width: 24),
+                      SizedBox(width: 24),
                       _ActionButton(icon: Icons.email, label: 'Email'),
                     ],
                   )
