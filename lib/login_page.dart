@@ -1,8 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-
-import 'signup_page.dart';
-import 'crud_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -12,16 +8,8 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final emailCtrl = TextEditingController();
-  final passCtrl = TextEditingController();
-  late Box _usersBox;
-
-  @override
-  void initState() {
-    super.initState();
-    // La box "users" est ouverte dans main.dart
-    _usersBox = Hive.box('users');
-  }
+  final TextEditingController emailCtrl = TextEditingController();
+  final TextEditingController passCtrl = TextEditingController();
 
   @override
   void dispose() {
@@ -30,89 +18,92 @@ class _LoginPageState extends State<LoginPage> {
     super.dispose();
   }
 
-  void _handleLogin() {
-    final email = emailCtrl.text.trim();
-    final pass = passCtrl.text.trim();
-
-    if (email.isEmpty || pass.isEmpty) {
-      _showDialog('Erreur', 'Veuillez remplir tous les champs');
-      return;
-    }
-
-    // Vérifier si l'utilisateur existe
-    final userData = _usersBox.get(email);
-
-    if (userData == null) {
-      _showDialog('Erreur', 'Aucun compte trouvé pour cet email');
-      return;
-    }
-
-    // userData est un Map sauvegardé lors de l'inscription
-    final storedPassword = (userData as Map)['password'] ?? '';
-
-    if (storedPassword != pass) {
-      _showDialog('Erreur', 'Mot de passe incorrect');
-      return;
-    }
-
-    // Connexion réussie → aller à la page CRUD
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const CrudPage()),
-    );
+  void _login() {
+    // For now, this just navigates to the home screen without real auth.
+    // You can add your own validation or backend logic here.
+    Navigator.pushReplacementNamed(context, '/home');
   }
 
-  void _showDialog(String title, String msg) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: Text(title),
-        content: Text(msg),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('OK'),
-          ),
-        ],
-      ),
-    );
+  void _goToSignup() {
+    Navigator.pushNamed(context, '/signup');
   }
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Scaffold(
-      appBar: AppBar(title: const Text('Connexion')),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            TextField(
-              controller: emailCtrl,
-              decoration: const InputDecoration(labelText: 'Email'),
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.contacts,
+                  size: 72,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Welcome Back',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Log in to continue to your contacts.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(height: 32),
+                TextField(
+                  controller: emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    labelText: 'Email',
+                    prefixIcon: const Icon(Icons.email_outlined),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: passCtrl,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    labelText: 'Password',
+                    prefixIcon: const Icon(Icons.lock_outline),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _login,
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Text(
+                        'Login',
+                        style: TextStyle(fontSize: 16),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextButton(
+                  onPressed: _goToSignup,
+                  child: const Text("Don't have an account? Sign up"),
+                ),
+              ],
             ),
-            const SizedBox(height: 10),
-            TextField(
-              controller: passCtrl,
-              decoration: const InputDecoration(labelText: 'Mot de passe'),
-              obscureText: true,
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _handleLogin,
-              child: const Text('Connexion'),
-            ),
-            const SizedBox(height: 10),
-            TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SignUpPage()),
-                );
-              },
-              child: const Text("Pas de compte ? Inscrivez-vous"),
-            ),
-          ],
+          ),
         ),
       ),
     );

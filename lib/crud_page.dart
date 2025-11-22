@@ -1,186 +1,238 @@
+// lib/crud_page.dart
 import 'package:flutter/material.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-
-import 'login_page.dart';
+import 'main.dart'; // Contact class
 
 class CrudPage extends StatefulWidget {
-  const CrudPage({super.key});
+  final List<Contact> contacts;
+  final void Function(Contact contact) onAddContact;
+  final void Function(int index, Contact updated) onEditContact;
+  final void Function(int index) onDeleteContact;
+
+  const CrudPage({
+    super.key,
+    required this.contacts,
+    required this.onAddContact,
+    required this.onEditContact,
+    required this.onDeleteContact,
+  });
 
   @override
   State<CrudPage> createState() => _CrudPageState();
 }
 
 class _CrudPageState extends State<CrudPage> {
-  final nameCtrl = TextEditingController();
-  final phoneCtrl = TextEditingController();
-  late Box _contactsBox;
-
-  @override
-  void initState() {
-    super.initState();
-    // La box "contacts" est déjà ouverte dans main.dart
-    _contactsBox = Hive.box('contacts');
-  }
+  final TextEditingController _nameCtrl = TextEditingController();
+  final TextEditingController _phoneCtrl = TextEditingController();
+  final TextEditingController _emailCtrl = TextEditingController();
 
   @override
   void dispose() {
-    nameCtrl.dispose();
-    phoneCtrl.dispose();
+    _nameCtrl.dispose();
+    _phoneCtrl.dispose();
+    _emailCtrl.dispose();
     super.dispose();
   }
 
-  void _addContact() {
-    final name = nameCtrl.text.trim();
-    final phone = phoneCtrl.text.trim();
+  void _openForm({int? index}) {
+    if (index != null) {
+      final contact = widget.contacts[index];
+      _nameCtrl.text = contact.name;
+      _phoneCtrl.text = contact.phone;
+      _emailCtrl.text = contact.email;
+    } else {
+      _nameCtrl.clear();
+      _phoneCtrl.clear();
+      _emailCtrl.clear();
+    }
 
-    if (name.isEmpty || phone.isEmpty) return;
-
-    _contactsBox.add({
-      'name': name,
-      'phone': phone,
-    });
-
-    nameCtrl.clear();
-    phoneCtrl.clear();
-  }
-
-  void _editContact(int index) {
-    final contact = _contactsBox.getAt(index) as Map;
-
-    nameCtrl.text = contact['name'] ?? '';
-    phoneCtrl.text = contact['phone'] ?? '';
-
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('Modifier contact'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(labelText: 'Nom'),
-            ),
-            TextField(
-              controller: phoneCtrl,
-              decoration: const InputDecoration(labelText: 'Téléphone'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              nameCtrl.clear();
-              phoneCtrl.clear();
-              Navigator.pop(context);
-            },
-            child: const Text('Annuler'),
-          ),
-          TextButton(
-            onPressed: () {
-              final newName = nameCtrl.text.trim();
-              final newPhone = phoneCtrl.text.trim();
-
-              if (newName.isEmpty || newPhone.isEmpty) return;
-
-              _contactsBox.putAt(index, {
-                'name': newName,
-                'phone': newPhone,
-              });
-
-              nameCtrl.clear();
-              phoneCtrl.clear();
-              Navigator.pop(context);
-            },
-            child: const Text('Enregistrer'),
-          ),
-        ],
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            bottom: MediaQuery.of(context).viewInsets.bottom + 16,
+            top: 16,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 40,
+                height: 4,
+                margin: const EdgeInsets.only(bottom: 16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[400],
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              Text(
+                index == null ? 'Add Contact' : 'Edit Contact',
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: _nameCtrl,
+                decoration: InputDecoration(
+                  labelText: 'Name',
+                  prefixIcon: const Icon(Icons.person_outline),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _phoneCtrl,
+                keyboardType: TextInputType.phone,
+                decoration: InputDecoration(
+                  labelText: 'Phone',
+                  prefixIcon: const Icon(Icons.phone_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _emailCtrl,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: const Icon(Icons.email_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () {
+                    final name = _nameCtrl.text.trim();
+                    final phone = _phoneCtrl.text.trim();
+                    final email = _emailCtrl.text.trim();
+
+                    if (name.isEmpty || phone.isEmpty) return;
+
+                    final newContact = Contact(
+                      id: index?.toString() ??
+                          DateTime.now()
+                              .millisecondsSinceEpoch
+                              .toString(),
+                      name: name,
+                      phone: phone,
+                      email: email.isEmpty ? 'no-email@example.com' : email,
+                    );
+
+                    if (index == null) {
+                      widget.onAddContact(newContact);
+                    } else {
+                      widget.onEditContact(index, newContact);
+                    }
+
+                    Navigator.pop(context);
+                  },
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: Text(index == null ? 'Add' : 'Save'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  void _deleteContact(int index) {
-    _contactsBox.deleteAt(index);
-  }
-
-  void _logout() {
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginPage()),
-      (route) => false,
-    );
+  void _delete(int index) {
+    widget.onDeleteContact(index);
   }
 
   @override
   Widget build(BuildContext context) {
+    final contacts = widget.contacts;
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Formulaire CRUD'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _logout,
-            tooltip: 'Déconnexion',
-          )
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            TextField(
-              controller: nameCtrl,
-              decoration: const InputDecoration(labelText: 'Nom'),
+      backgroundColor: Colors.transparent,
+      body: contacts.isEmpty
+          ? Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Icon(
+                Icons.inbox_outlined,
+                size: 64,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'No contacts yet',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Use the + button below to add your first contact.',
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      )
+          : ListView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
+        itemCount: contacts.length,
+        itemBuilder: (context, index) {
+          final c = contacts[index];
+          return Card(
+            margin: const EdgeInsets.symmetric(vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
             ),
-            TextField(
-              controller: phoneCtrl,
-              decoration: const InputDecoration(labelText: 'Téléphone'),
-            ),
-            const SizedBox(height: 10),
-            ElevatedButton(
-              onPressed: _addContact,
-              child: const Text('Ajouter'),
-            ),
-            const Divider(),
-            Expanded(
-              child: ValueListenableBuilder(
-                valueListenable: _contactsBox.listenable(),
-                builder: (context, Box box, _) {
-                  if (box.isEmpty) {
-                    return const Center(child: Text('Aucun contact'));
-                  }
-
-                  return ListView.builder(
-                    itemCount: box.length,
-                    itemBuilder: (_, i) {
-                      final contact = box.getAt(i) as Map;
-                      final name = contact['name'] ?? '';
-                      final phone = contact['phone'] ?? '';
-
-                      return ListTile(
-                        title: Text(name),
-                        subtitle: Text(phone),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit),
-                              onPressed: () => _editContact(i),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete),
-                              onPressed: () => _deleteContact(i),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                },
+            child: ListTile(
+              leading: CircleAvatar(
+                child: Text(
+                  c.name.isNotEmpty
+                      ? c.name[0].toUpperCase()
+                      : '?',
+                ),
+              ),
+              title: Text(c.name),
+              subtitle: Text(c.phone),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.edit_outlined),
+                    onPressed: () => _openForm(index: index),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete_outline),
+                    onPressed: () => _delete(index),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => _openForm(),
+        child: const Icon(Icons.add),
       ),
     );
   }
