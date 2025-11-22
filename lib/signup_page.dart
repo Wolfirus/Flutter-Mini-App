@@ -65,7 +65,7 @@ class _SignupPageState extends State<SignupPage> {
       _isLoading = false;
     });
 
-    Navigator.pop(context); // back to login
+    Navigator.pop(context); // Back to login
   }
 
   @override
